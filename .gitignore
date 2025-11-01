@@ -5,6 +5,10 @@ src/config/cookies.txt
 
 # Ignores input videos
 input/*.mp4
+input/*.wav
+
+output/*.mp4
+output/*.wav
 
 # Ignore Whisperx model
 whisperx/
