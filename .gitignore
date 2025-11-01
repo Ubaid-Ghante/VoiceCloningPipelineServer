@@ -8,7 +8,7 @@ input/*.mp4
 
 # Ignore Whisperx model
 whisperx/
-
+checkpoints/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
