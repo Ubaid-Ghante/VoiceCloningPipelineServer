@@ -2,16 +2,33 @@ import os
 import yt_dlp
 import re
 
-# Helper funtion to generate valid filename from video title
-def sanitize_ascii(text: str) -> str:
+from src.config.logger_config import logger
+
+def _sanitize_ascii(text: str) -> str:
+    """Remove non-ascii characters from text.
+    Args:
+        text (str): Input text.
+    Returns:
+        str: Sanitized text with only ascii characters.
+    """
     return re.sub(r'[^\x00-\x7F]', '', text)
 
-# Main function to download video
 async def download_video(url: str,
                    source: str = "youtube",
                    output_dir: str = ".",
                    filename: str = None,
                    best_quality: bool = True) -> None:
+    """Download video from given URL using yt-dlp.
+    Args:
+        url: URL of the video to download.
+        source: Source platform of the video (default: "youtube").
+        output_dir: Directory to save the downloaded video (default: current directory).
+        filename: Desired filename for the downloaded video (default: None, uses video title).
+        best_quality: Whether to download the best quality video (default: True).
+    Returns:
+        dict: Information about the downloaded video including path, title, and extension.
+    """
+    
     os.makedirs(output_dir, exist_ok=True)
 
     ydl_opts = {
@@ -33,8 +50,8 @@ async def download_video(url: str,
     video_filename = filename + "." + video_ext if filename else video_title + "." + video_ext
     video_path = os.path.join(output_dir, video_filename)
 
-    if not filename and video_title != sanitize_ascii(video_title):
-        sanitized_title = sanitize_ascii(video_title)
+    if not filename and video_title != _sanitize_ascii(video_title):
+        sanitized_title = _sanitize_ascii(video_title)
         sanitized_path = os.path.join(output_dir, sanitized_title + "." + video_ext)
         os.rename(video_path, sanitized_path)
         video_path = sanitized_path
@@ -46,10 +63,23 @@ async def download_video(url: str,
         "ext": video_ext
     }
 
-# Function to delete video file
-def delete_video(video_path: str) -> None:
-    if os.path.exists(video_path):
-        os.remove(video_path)
+def delete_video(video_path: str) -> bool:
+    """Delete the video file at the specified path.
+    Args:
+        video_path: Path to the video file to delete.
+    Returns:
+        bool: True if deletion was successful, False otherwise.
+    """
+    try: 
+        if os.path.exists(video_path):
+            os.remove(video_path)
+            return True
+        else:
+            logger.warning(f"Video file {video_path} does not exist.")
+            return False
+    except Exception as e:
+        logger.error(f"Error deleting video file {video_path}: {e}")
+        return False
 
 if __name__ == "__main__":
     import asyncio
@@ -58,7 +88,7 @@ if __name__ == "__main__":
 
     video_info = asyncio.run(download_video(url, "youtube", output_dir, best_quality=True))
     
-    print("Downloaded video info:", video_info)
+    logger.info("Downloaded video info:", video_info)
     
     # Command to test __main__ block
     # uv run python -m src.services.download_video
