@@ -5,8 +5,8 @@ import shutil
 import os
 import subprocess
 from src.services.download_video import download_video
-from src.services.transcribe_video import transcribe_video
-from src.services.generate_audio import generate_audio
+from src.services.transcribe_video import transcribe_video, _load_models
+from src.services.generate_audio import generate_audio, _load_tts_model
 from src.services.overlay_audio_on_video import overlay_audio_on_video
 
 from src.config.logger_config import logger
@@ -17,6 +17,14 @@ class ClipPart(BaseModel):
     end: float = 0.0
     audio_file_path: str = ""
     sample_to_use: str = ""
+
+logger.info("Loading WhisperX Model...")
+_load_models()
+logger.info("WhisperX Loaded Successfully.")
+
+logger.info("Loading IndexTTS Model...")
+_load_tts_model()
+logger.info("IndexTTS Loaded Successfully.")
 
 
 def _chunk_transcript(word_timestamps, default_sample) -> List[ClipPart]:
@@ -51,15 +59,21 @@ def _chunk_transcript(word_timestamps, default_sample) -> List[ClipPart]:
 
     return chunks
 
-async def main_pipeline(youtube_url, sample_file):
+async def main_pipeline(youtube_url="", sample_file="", video_file=""):
     video_details = {}
-    try:
-        video_details = await download_video(url = youtube_url, source="youtube", output_dir="input")
-        source_video_path = video_details.get("video_path", None)
-    except:
-        raise Exception("Failed to download video")
+    
+    if video_file:
+        video_details["video_path"] = video_file
+    else:
+        try:
+            logger.debug(f"Downloading video from YouTube URL: {youtube_url}")
+            video_details = await download_video(url = youtube_url, source="youtube", output_dir="input")
+            source_video_path = video_details.get("video_path", None)
+        except:
+            raise Exception("Failed to download video")
 
     try:
+        logger.debug(f"Transcribing video: {source_video_path}")
         transcription = await transcribe_video(video_path=source_video_path)
         with open("output/transcript.json", "w", encoding='utf-8') as fh:
             json.dump(transcription, fh, ensure_ascii=False, indent=4)
@@ -70,17 +84,20 @@ async def main_pipeline(youtube_url, sample_file):
 
     
     try:
+        logger.debug("Generating audio chunks...")
         if sample_file.endswith(".mp3"):
             wav_file_path = sample_file[:-4]+".wav"
             subprocess.call(['ffmpeg', '-i', sample_file, wav_file_path])
             sample_file = wav_file_path
         clips = _chunk_transcript(word_level_timestamps, default_sample=sample_file)
+        os.makedirs("output/audio_chunks", exist_ok=True)
         for i, clip in enumerate(clips):
             await generate_audio(text=clip.text, output_filepath=f"output/audio_chunks/chunk{i}.wav", sample_filepath=clip.sample_to_use, video_sec=clip.end - clip.start)
     except:
         raise Exception("Failed to Audio Generation")
 
     try:
+        logger.info("Overlaying generated audio on video...")
         overlay_audio_on_video(
             video_path=source_video_path,
             chunk_audio_dir="output/audio_chunks",
@@ -119,5 +136,7 @@ async def main_pipeline(youtube_url, sample_file):
 
 if __name__ == "__main__":
     import asyncio
-    asyncio.run(main_pipeline("https://youtu.be/UF8uR6Z6KLc?si=2Xydno-OH-QJYbcL", "input/VoiceSample1.mp3"))
+    asyncio.run(main_pipeline(video_file="./input/Steve Jobs' 2005 Stanford Commencement Address.mp4", sample_file="./input/VoiceSample1.mp3"))
+    
+    # uv run python main.py
     

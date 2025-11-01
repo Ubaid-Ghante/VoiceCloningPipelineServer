@@ -1,6 +1,7 @@
 import os
 import yt_dlp
 import re
+import json
 
 from src.config.logger_config import logger
 
@@ -17,7 +18,7 @@ async def download_video(url: str,
                    source: str = "youtube",
                    output_dir: str = ".",
                    filename: str = None,
-                   best_quality: bool = True) -> None:
+                   best_quality: bool = True) -> dict:
     """Download video from given URL using yt-dlp.
     Args:
         url: URL of the video to download.
@@ -87,8 +88,8 @@ if __name__ == "__main__":
     output_dir = "./input"
 
     video_info = asyncio.run(download_video(url, "youtube", output_dir, best_quality=True))
-    
-    logger.info("Downloaded video info:", video_info)
+
+    logger.info(f"Downloaded video info: {json.dumps(video_info, indent=4)}")
     
     # Command to test __main__ block
     # uv run python -m src.services.download_video

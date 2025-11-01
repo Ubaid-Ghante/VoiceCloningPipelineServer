@@ -7,6 +7,12 @@ import librosa
 import os
 from indextts.infer_v2 import IndexTTS2
 
+INDEXTTS_MODEL = None
+
+def _load_tts_model():
+    global INDEXTTS_MODEL
+    INDEXTTS_MODEL = IndexTTS2(cfg_path="src/models/indextts/checkpoints/config.yaml", model_dir="src/models/indextts/checkpoints", use_fp16=False, use_cuda_kernel=False, use_deepspeed=False)
+
 async def generate_audio(text: str, output_filepath: str, sample_filepath: str, video_sec: float=None):
     """Generate audio using IndexTTS with a speaker audio prompt. Optionally stretch to match video duration.
     Args:
@@ -17,10 +23,8 @@ async def generate_audio(text: str, output_filepath: str, sample_filepath: str, 
     Returns:
         Creates the audio file at output_filepath.
     """
-
-    tts = IndexTTS2(cfg_path="src/models/indextts/checkpoints/config.yaml", model_dir="src/models/indextts/checkpoints", use_fp16=False, use_cuda_kernel=False, use_deepspeed=False)
-
-    tts.infer(spk_audio_prompt=sample_filepath, text=text, output_path=output_filepath, verbose=True)
+    global INDEXTTS_MODEL
+    INDEXTTS_MODEL.infer(spk_audio_prompt=sample_filepath, text=text, output_path=output_filepath, verbose=True)
     if video_sec:
         # measure actual vs target
         y, sr = librosa.load(output_filepath, sr=None)
@@ -46,7 +50,7 @@ async def generate_audio(text: str, output_filepath: str, sample_filepath: str, 
 
 if __name__ == "__main__":
     import asyncio
-
+    _load_tts_model()
     asyncio.run(generate_audio("Hi there, this is a test for voice cloning.", "output/gen.wav", "input/voice_12.wav"))
 
     # uv run python -m src.services.generate_audio
