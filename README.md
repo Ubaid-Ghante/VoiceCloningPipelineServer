@@ -24,12 +24,7 @@ Pipeline of stt and tts models for voice cloning.
 > or `pip` . `uv` is [up to 115x faster](https://github.com/astral-sh/uv/blob/main/BENCHMARKS.md)
 > than `pip`.
 
-2. Install some system dependencies for seamless installation.
-
-```bash
-sudo apt update
-sudo apt install llvm-14 llvm-14-dev llvm-14-tools clang
-```
+2. Install ffmpeg on your machine from [here](https://www.ffmpeg.org/download.html). We need this to extract audio from video and other services in the project.
 
 3. Install required dependencies: \
    This uses `uv` to manage the project's dependency environment. The following command
@@ -39,8 +34,15 @@ sudo apt install llvm-14 llvm-14-dev llvm-14-tools clang
 ```bash
 uv sync
 ```
+if you face error related to llvm try to install the following packages
+```bash
+sudo apt update
+sudo apt install llvm-14 llvm-14-dev llvm-14-tools clang
+```
 
-4. Download the required models via [uv tool](https://docs.astral.sh/uv/guides/tools/#installing-tools): \
+### 🗂️ Download Model
+
+1. Download the required models via [uv tool](https://docs.astral.sh/uv/guides/tools/#installing-tools): \
    Download via `huggingface-cli`:
 
 ```bash
