@@ -24,7 +24,13 @@ Pipeline of stt and tts models for voice cloning.
 > or `pip` . `uv` is [up to 115x faster](https://github.com/astral-sh/uv/blob/main/BENCHMARKS.md)
 > than `pip`.
 
-2. Install ffmpeg on your machine from [here](https://www.ffmpeg.org/download.html). We need this to extract audio from video and other services in the project.
+2. Install ffmpeg on your machine from [here](https://www.ffmpeg.org/download.html). We need this to extract audio from video and other services in the project. \
+For Linux
+```bash
+sudo add-apt-repository ppa:savoury1/ffmpeg4
+sudo apt-get update
+sudo apt-get install ffmpeg
+```
 
 3. Install required dependencies: \
    This uses `uv` to manage the project's dependency environment. The following command

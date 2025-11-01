@@ -45,13 +45,14 @@ def _chunk_transcript(word_timestamps, default_sample) -> List[ClipPart]:
             continue
 
         # Create a string representation of the chunk
-        chunk_text = " ".join(chunk_words)
+        chunk_text = " ".join([_["word"] for _ in chunk_words])
+        chunk_text.replace(" ,", ",")
         chunks.append(ClipPart(
-            chunk_text,
-            chunk_words[0]['start'],
-            chunk_words[-1]['end'],
-            "",
-            default_sample
+            text=chunk_text,
+            start=chunk_words[0]['start'],
+            end=chunk_words[-1]['end'],
+            audio_file_path="",
+            sample_to_use=default_sample
         ))
         
         # Move the window forward
@@ -64,6 +65,7 @@ async def main_pipeline(youtube_url="", sample_file="", video_file=""):
     
     if video_file:
         video_details["video_path"] = video_file
+        source_video_path = video_file
     else:
         try:
             logger.debug(f"Downloading video from YouTube URL: {youtube_url}")
