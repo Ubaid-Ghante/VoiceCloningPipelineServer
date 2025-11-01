@@ -6,6 +6,9 @@ src/config/cookies.txt
 # Ignores input videos
 input/*.mp4
 
+# Ignore Whisperx model
+whisperx/
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

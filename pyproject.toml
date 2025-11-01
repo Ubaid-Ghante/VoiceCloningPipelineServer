@@ -3,7 +3,11 @@ name = "voicecloningpipelineserver"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 dependencies = [
+    "pydantic-settings>=2.11.0",
+    "torch>=2.8.0",
+    "torchaudio>=2.8.0",
+    "whisperx>=3.7.4",
     "yt-dlp>=2025.10.22",
 ]
