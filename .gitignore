@@ -1,5 +1,12 @@
 uv.lock
 
+# Ignores cookies of youtube video downloader
+src/config/cookies.txt
+
+# Ignores input videos
+input/*.mp4
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
