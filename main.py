@@ -4,6 +4,8 @@ import json
 import shutil
 import os
 import subprocess
+import uuid
+
 from src.services.download_video import download_video
 from src.services.transcribe_video import transcribe_video, _load_models
 from src.services.generate_audio import generate_audio, _load_tts_model
@@ -62,7 +64,7 @@ def _chunk_transcript(word_timestamps, default_sample) -> List[ClipPart]:
 
 async def main_pipeline(youtube_url="", sample_file="", video_file=""):
     video_details = {}
-    
+    run_id = str(uuid.uuid4())
     if video_file:
         video_details["video_path"] = video_file
         source_video_path = video_file
@@ -77,7 +79,7 @@ async def main_pipeline(youtube_url="", sample_file="", video_file=""):
     try:
         logger.debug(f"Transcribing video: {source_video_path}")
         transcription = await transcribe_video(video_path=source_video_path)
-        with open("output/transcript.json", "w", encoding='utf-8') as fh:
+        with open(f"output/{run_id}_transcript.json", "w", encoding='utf-8') as fh:
             json.dump(transcription, fh, ensure_ascii=False, indent=4)
 
         word_level_timestamps = transcription.get("word_level_timestamps", None)
@@ -92,9 +94,9 @@ async def main_pipeline(youtube_url="", sample_file="", video_file=""):
             subprocess.call(['ffmpeg', '-i', sample_file, wav_file_path])
             sample_file = wav_file_path
         clips = _chunk_transcript(word_level_timestamps, default_sample=sample_file)
-        os.makedirs("output/audio_chunks", exist_ok=True)
+        os.makedirs(f"output/audio_chunks/{run_id}", exist_ok=True)
         for i, clip in enumerate(clips):
-            await generate_audio(text=clip.text, output_filepath=f"output/audio_chunks/chunk{i}.wav", sample_filepath=clip.sample_to_use, video_sec=clip.end - clip.start)
+            await generate_audio(text=clip.text, output_filepath=f"output/audio_chunks/{run_id}/chunk{i}.wav", sample_filepath=clip.sample_to_use, video_sec=clip.end - clip.start)
     except:
         raise Exception("Failed to Audio Generation")
 
@@ -102,8 +104,8 @@ async def main_pipeline(youtube_url="", sample_file="", video_file=""):
         logger.info("Overlaying generated audio on video...")
         overlay_audio_on_video(
             video_path=source_video_path,
-            chunk_audio_dir="output/audio_chunks",
-            output_video_path="output/final_dubbed_video.mp4"
+            chunk_audio_dir=f"output/audio_chunks/{run_id}",
+            output_video_path=f"output/{run_id}_final_dubbed_video.mp4"
         )
     except Exception as e:
         raise Exception(f"Failed to overlay audio on video: {e}")
@@ -120,8 +122,7 @@ async def main_pipeline(youtube_url="", sample_file="", video_file=""):
         #     os.remove(source_video_path)
 
         # 3. Remove individual chunk audios (keep merged + final video)
-        for f in os.listdir("output/audio_chunks"):
-            os.remove(os.path.join("output/audio_chunks", f))
+        shutil.rmtree(f"output/audio_chunks/{run_id}", ignore_errors=True)
 
         # 4. Remove temporary stretch directory (if created by generate_audio)
         stretch_tmp = "_temp_dub_segments_for_stretch"
