@@ -25,6 +25,8 @@ CHUNK_LENGTH=10
 async def main_pipeline(youtube_url="", sample_file="", video_file=""):
     video_details = {}
     run_id = str(uuid.uuid4())
+    
+    # Downloads/Fetches the video
     if video_file:
         video_details["video_path"] = video_file
         source_video_path = video_file
@@ -36,6 +38,8 @@ async def main_pipeline(youtube_url="", sample_file="", video_file=""):
         except:
             raise Exception("Failed to download video")
 
+
+    # Transcribes the video to get word-level timestamps
     try:
         logger.debug(f"Transcribing video: {source_video_path}")
         transcription = await transcribe_video(video_path=source_video_path)
@@ -47,6 +51,7 @@ async def main_pipeline(youtube_url="", sample_file="", video_file=""):
         raise Exception("Failed to transcribe the audio.")
 
     
+    # Generate audio chunks based on word-level timestamps
     try:
         logger.debug("Generating audio chunks...")
         if sample_file.endswith(".mp3"):
@@ -60,6 +65,8 @@ async def main_pipeline(youtube_url="", sample_file="", video_file=""):
     except:
         raise Exception("Failed to Audio Generation")
 
+
+    # Overlay generated audio on video
     try:
         logger.info("Overlaying generated audio on video...")
         overlay_audio_on_video(
@@ -79,8 +86,8 @@ async def main_pipeline(youtube_url="", sample_file="", video_file=""):
             shutil.rmtree(tmp_dir, ignore_errors=True)
 
         # 2. Delete the downloaded source video (optional)
-        # if source_video_path and os.path.exists(source_video_path):
-        #     os.remove(source_video_path)
+        if source_video_path and os.path.exists(source_video_path):
+            os.remove(source_video_path)
 
         # 3. Remove individual chunk audios (keep merged + final video)
         shutil.rmtree(f"output/audio_chunks/{run_id}", ignore_errors=True)
@@ -91,7 +98,7 @@ async def main_pipeline(youtube_url="", sample_file="", video_file=""):
             shutil.rmtree(stretch_tmp, ignore_errors=True)
 
         # 5. Delete transcript json
-        # os.remove("output/transcript.json")
+        os.remove(f"output/{run_id}_transcript.json")
 
         logger.info("Cleanup completed successfully.")
 
@@ -102,5 +109,6 @@ if __name__ == "__main__":
     import asyncio
     asyncio.run(main_pipeline(video_file="./input/MiniCropSteve Jobs' 2005 Stanford Commencement Address.mp4", sample_file="./input/VoiceSample1.mp3"))
     
+    # Command to test the script:
     # uv run python main.py
     

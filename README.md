@@ -79,6 +79,8 @@ hf download IndexTeam/IndexTTS-2 --local-dir=src/models/indextts/checkpoints
 
 ### 🚀 Running the Pipeline
 
+> If you are going to use youtube links please make sure to have `cookies.txt` file in the `src/config/` folder for `yt-dlp` to work properly. Add your browser cookies to that file. You can use [this guide](https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp)
+
 There are two ways to run the pipeline:
 
 1. **Using Streamlit Web App**: \

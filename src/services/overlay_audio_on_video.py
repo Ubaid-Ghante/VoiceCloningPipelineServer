@@ -20,6 +20,15 @@ class ClipPart(BaseModel):
     sample_to_use: str = ""
 
 def _chunk_transcript(word_timestamps, default_sample, chunk_size_seconds=30) -> List[ClipPart]:
+    """
+    Chunk the word-level timestamps into segments of specified duration.
+    Args:
+        word_timestamps: List of word-level timestamps from transcription.
+        default_sample: Default speaker sample file to use for all chunks.
+        chunk_size_seconds: Desired chunk size in seconds.
+    Returns:
+        List of ClipPart objects representing the chunks.
+    """
     chunks = []
 
     current_time = 0
@@ -53,7 +62,10 @@ def _chunk_transcript(word_timestamps, default_sample, chunk_size_seconds=30) ->
 
 
 def _get_video_duration(video_path: str) -> float:
-    import subprocess, json
+    """
+    Get the duration of the video in seconds using ffprobe.
+    """
+    
     result = subprocess.run(
         ["ffprobe", "-v", "error", "-show_entries",
          "format=duration", "-of", "json", video_path],
@@ -95,6 +107,7 @@ def _merge_audio_chunks_with_timing(clips, output_path: str, sr: int = 44100, to
     sf.write(output_path, final_audio, sr)
     return output_path
 
+@DeprecationWarning
 def _merge_audio_chunks(chunk_paths: List[str], output_path: str) -> str:
     """
     Merge multiple audio clips into one continuous WAV file.
@@ -160,7 +173,7 @@ def overlay_audio_on_video(video_path: str, chunk_audio_dir: str, output_video_p
         video_path: Path to the source/original video.
         chunk_audio_dir: Directory containing chunk{i}.wav audio files.
         output_video_path: Path to save the final dubbed video.
-
+        clips: List of ClipPart objects with timing and text info.
     Returns:
         Path to the final dubbed video.
     """
@@ -175,12 +188,13 @@ def overlay_audio_on_video(video_path: str, chunk_audio_dir: str, output_video_p
 
     merged_audio_path = os.path.join(chunk_audio_dir, "merged_dub.wav")
 
-    logger.debug(f"Merging {len(chunk_files)} audio chunks...")  # or use ffprobe inline
+    logger.debug(f"Merging {len(chunk_files)} audio chunks...")
     video_dur = _get_video_duration(video_path)
 
     for i, clip in enumerate(clips):
         clip.audio_file_path = os.path.join(chunk_audio_dir, f"chunk{i}.wav")
 
+    # New merge with silent gaps
     _merge_audio_chunks_with_timing(clips, merged_audio_path, total_video_dur=video_dur)
     # _merge_audio_chunks(chunk_files, merged_audio_path)
 

@@ -32,6 +32,7 @@ async def download_video(url: str,
     
     os.makedirs(output_dir, exist_ok=True)
 
+    # IMPORTANT: Make sure to have cookies.txt file in the config folder for yt-dlp to work.
     ydl_opts = {
         "format": "bestvideo+bestaudio/best" if best_quality else "best",
         "merge_output_format": "mp4",
@@ -45,12 +46,26 @@ async def download_video(url: str,
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         ydl.download([url])
+
+    # This extracts info without downloading again
     info_dict = ydl.extract_info(url, download=False)
     video_title = info_dict.get('title', None)
     video_ext = info_dict.get('ext', 'mp4')
     video_filename = filename + "." + video_ext if filename else video_title + "." + video_ext
     video_path = os.path.join(output_dir, video_filename)
 
+    # This is to avoid issues where yt-dlp fails to name the file correctly
+    if not os.path.exists(video_path):
+        files = sorted(
+            [os.path.join(output_dir, f) for f in os.listdir(output_dir)],
+            key=os.path.getmtime,
+            reverse=True
+        )
+        if files:
+            video_path = files[0]
+            logger.info(f"Using detected downloaded file: {video_path}")
+
+    # This avoids issues with non-ascii filenames.
     if not filename and video_title != _sanitize_ascii(video_title):
         sanitized_title = _sanitize_ascii(video_title)
         sanitized_path = os.path.join(output_dir, sanitized_title + "." + video_ext)

@@ -2,16 +2,21 @@ import numpy as np
 if not hasattr(np, "bool8"):
     np.bool8 = np.bool_
 
+import shutil
 import subprocess
 import librosa
 import os
+import torch
 from indextts.infer_v2 import IndexTTS2
 
 INDEXTTS_MODEL = None
+TTS_DEVICE = "cpu"
 
+# Load the IndexTTS model globally and kept seperate for just initialization.
 def _load_tts_model():
-    global INDEXTTS_MODEL
-    INDEXTTS_MODEL = IndexTTS2(cfg_path="src/models/indextts/checkpoints/config.yaml", model_dir="src/models/indextts/checkpoints", use_fp16=False, use_cuda_kernel=False, use_deepspeed=False)
+    global INDEXTTS_MODEL, TTS_DEVICE
+    TTS_DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+    INDEXTTS_MODEL = IndexTTS2(cfg_path="src/models/indextts/checkpoints/config.yaml", model_dir="src/models/indextts/checkpoints", use_fp16=False, use_cuda_kernel=False, use_deepspeed=False, device=TTS_DEVICE)
 
 async def generate_audio(text: str, output_filepath: str, sample_filepath: str, video_sec: float=None):
     """Generate audio using IndexTTS with a speaker audio prompt. Optionally stretch to match video duration.
@@ -25,6 +30,8 @@ async def generate_audio(text: str, output_filepath: str, sample_filepath: str, 
     """
     global INDEXTTS_MODEL
     INDEXTTS_MODEL.infer(spk_audio_prompt=sample_filepath, text=text, output_path=output_filepath, verbose=True)
+    
+    # The below code stretches the audio to match the video segment duration if provided.
     if video_sec:
         # measure actual vs target
         y, sr = librosa.load(output_filepath, sr=None)
@@ -47,6 +54,7 @@ async def generate_audio(text: str, output_filepath: str, sample_filepath: str, 
 
                 
                 os.replace(stretched_dub_path, output_filepath)
+                shutil.rmtree(temp_dir)
 
 if __name__ == "__main__":
     import asyncio

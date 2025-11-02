@@ -8,6 +8,11 @@ import whisperx
 
 from src.config.logger_config import logger
 
+WHISPERX_MODEL = None
+ALIGN_MODEL_EN = None
+METADATA_EN = None
+DEVICE = "cpu"
+
 def _load_models():
     global WHISPERX_MODEL, ALIGN_MODEL_EN, METADATA_EN, DEVICE
     try:
