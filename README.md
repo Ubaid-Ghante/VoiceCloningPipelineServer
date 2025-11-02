@@ -10,6 +10,10 @@ Pipeline of stt and tts models for voice cloning and creating a dubbbed video.
 
 ## Overview
 
+#### Objective
+
+> Take any video and dub it in your desired voice.
+
 This repository contains a pipeline that combines speech-to-text (STT) and text-to-speech (TTS) models to facilitate voice cloning and dubbing videos. The pipeline allows users to dub any video in their desired voice. The main components of the pipeline include:
 
 1. Downloading the video from a given URL.
@@ -94,6 +98,8 @@ Note: Make sure to run this command from the root directory of the project and t
 
 2. **Using the main.py Script**: \
    You can also run the pipeline directly using the `main.py` script. Modify the parameters in the script as needed and execute it.
+
+   Place your desired video URL and sample audio file path in the `main.py` file before running.
 
 ```bash
 uv run python main.py
