@@ -1,5 +1,3 @@
-from pydantic import BaseModel
-from typing import List
 import json
 import shutil
 import os
@@ -9,16 +7,9 @@ import uuid
 from src.services.download_video import download_video
 from src.services.transcribe_video import transcribe_video, _load_models
 from src.services.generate_audio import generate_audio, _load_tts_model
-from src.services.overlay_audio_on_video import overlay_audio_on_video
+from src.services.overlay_audio_on_video import overlay_audio_on_video, _chunk_transcript
 
 from src.config.logger_config import logger
-
-class ClipPart(BaseModel):
-    text: str = ""
-    start: float = 0.0
-    end: float = 0.0
-    audio_file_path: str = ""
-    sample_to_use: str = ""
 
 logger.info("Loading WhisperX Model...")
 _load_models()
@@ -28,39 +19,6 @@ logger.info("Loading IndexTTS Model...")
 _load_tts_model()
 logger.info("IndexTTS Loaded Successfully.")
 
-
-def _chunk_transcript(word_timestamps, default_sample) -> List[ClipPart]:
-    chunks = []
-    chunk_size_seconds = 60
-
-    current_time = 0
-    while current_time < word_timestamps[-1]['end']:
-        # Find the words that fall within the current chunk window
-        chunk_words = [
-            word for word in word_timestamps 
-            if word['start'] >= current_time and word['end'] <= current_time + chunk_size_seconds
-        ]
-        
-        if not chunk_words:
-            # Move to the next potential start time if no words are in this chunk
-            current_time += chunk_size_seconds
-            continue
-
-        # Create a string representation of the chunk
-        chunk_text = " ".join([_["word"] for _ in chunk_words])
-        chunk_text.replace(" ,", ",")
-        chunks.append(ClipPart(
-            text=chunk_text,
-            start=chunk_words[0]['start'],
-            end=chunk_words[-1]['end'],
-            audio_file_path="",
-            sample_to_use=default_sample
-        ))
-        
-        # Move the window forward
-        current_time += chunk_size_seconds
-
-    return chunks
 
 async def main_pipeline(youtube_url="", sample_file="", video_file=""):
     video_details = {}
@@ -104,8 +62,9 @@ async def main_pipeline(youtube_url="", sample_file="", video_file=""):
         logger.info("Overlaying generated audio on video...")
         overlay_audio_on_video(
             video_path=source_video_path,
-            chunk_audio_dir=f"output/audio_chunks/{run_id}",
-            output_video_path=f"output/{run_id}_final_dubbed_video.mp4"
+            chunk_audio_dir="output/audio_chunks/{run_id}",
+            output_video_path="output/{run_id}_final_dubbed_video.mp4",
+            clips=clips
         )
     except Exception as e:
         raise Exception(f"Failed to overlay audio on video: {e}")
@@ -139,7 +98,7 @@ async def main_pipeline(youtube_url="", sample_file="", video_file=""):
 
 if __name__ == "__main__":
     import asyncio
-    asyncio.run(main_pipeline(video_file="./input/Steve Jobs' 2005 Stanford Commencement Address.mp4", sample_file="./input/VoiceSample1.mp3"))
+    asyncio.run(main_pipeline(video_file="./input/MiniCropSteve Jobs' 2005 Stanford Commencement Address.mp4", sample_file="./input/VoiceSample1.mp3"))
     
     # uv run python main.py
     

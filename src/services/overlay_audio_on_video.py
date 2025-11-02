@@ -1,8 +1,100 @@
+import json
 import os
 import subprocess
 import librosa
 import soundfile as sf
 from typing import List
+import numpy as np
+
+from pydantic import BaseModel
+from typing import List
+
+from src.config.logger_config import logger
+
+
+class ClipPart(BaseModel):
+    text: str = ""
+    start: float = 0.0
+    end: float = 0.0
+    audio_file_path: str = ""
+    sample_to_use: str = ""
+
+def _chunk_transcript(word_timestamps, default_sample) -> List[ClipPart]:
+    chunks = []
+    chunk_size_seconds = 140
+
+    current_time = 0
+    while current_time < word_timestamps[-1]['end']:
+        # Find the words that fall within the current chunk window
+        chunk_words = [
+            word for word in word_timestamps 
+            if word['start'] >= current_time and word['end'] <= current_time + chunk_size_seconds
+        ]
+        
+        if not chunk_words:
+            # Move to the next potential start time if no words are in this chunk
+            current_time += chunk_size_seconds
+            continue
+
+        # Create a string representation of the chunk
+        chunk_text = " ".join([_["word"] for _ in chunk_words])
+        chunk_text.replace(" ,", ",")
+        chunks.append(ClipPart(
+            text=chunk_text,
+            start=chunk_words[0]['start'],
+            end=chunk_words[-1]['end'],
+            audio_file_path="",
+            sample_to_use=default_sample
+        ))
+        
+        # Move the window forward
+        current_time += chunk_size_seconds
+
+    return chunks
+
+
+def _get_video_duration(video_path: str) -> float:
+    import subprocess, json
+    result = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries",
+         "format=duration", "-of", "json", video_path],
+        capture_output=True, text=True
+    )
+    return float(json.loads(result.stdout)["format"]["duration"])
+
+def _merge_audio_chunks_with_timing(clips, output_path: str, sr: int = 44100, total_video_dur: float | None = None):
+    """
+    Merge audio chunks according to their start and end timestamps,
+    adding silence where needed to match the video timeline.
+    """
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    final_audio = np.zeros(0, dtype=np.float32)
+    current_time = 0.0
+
+    for clip in clips:
+        if not os.path.exists(clip.audio_file_path):
+            raise FileNotFoundError(f"Missing chunk: {clip.audio_file_path}")
+        
+        # Add silence for gap before this clip
+        if clip.start > current_time:
+            gap_dur = clip.start - current_time
+            silence = np.zeros(int(gap_dur * sr), dtype=np.float32)
+            final_audio = np.concatenate([final_audio, silence])
+            current_time += gap_dur
+
+        # Load the chunk
+        y, sr_ = librosa.load(clip.audio_file_path, sr=sr)
+        final_audio = np.concatenate([final_audio, y])
+        current_time += clip.end - clip.start
+
+    # If total video duration is known, pad silence till the end
+    if total_video_dur and total_video_dur > current_time:
+        pad_dur = total_video_dur - current_time
+        silence = np.zeros(int(pad_dur * sr), dtype=np.float32)
+        final_audio = np.concatenate([final_audio, silence])
+
+    sf.write(output_path, final_audio, sr)
+    return output_path
 
 def _merge_audio_chunks(chunk_paths: List[str], output_path: str) -> str:
     """
@@ -34,7 +126,6 @@ def _merge_audio_chunks(chunk_paths: List[str], output_path: str) -> str:
     sf.write(output_path, final_audio, sr)
     return output_path
 
-
 def _mux_video_with_audio(video_path: str, audio_path: str, output_path: str):
     """
     Combine the dubbed audio with the original video, replacing its original track.
@@ -62,8 +153,7 @@ def _mux_video_with_audio(video_path: str, audio_path: str, output_path: str):
     subprocess.run(cmd, check=True, capture_output=True)
     return output_path
 
-
-def overlay_audio_on_video(video_path: str, chunk_audio_dir: str, output_video_path: str) -> str:
+def overlay_audio_on_video(video_path: str, chunk_audio_dir: str, output_video_path: str, clips: List[ClipPart]) -> str:
     """
     Merge all audio chunks and overlay the combined dubbed audio over the source video.
 
@@ -86,22 +176,30 @@ def overlay_audio_on_video(video_path: str, chunk_audio_dir: str, output_video_p
 
     merged_audio_path = os.path.join(chunk_audio_dir, "merged_dub.wav")
 
-    print(f"Merging {len(chunk_files)} audio chunks...")
-    _merge_audio_chunks(chunk_files, merged_audio_path)
+    logger.debug(f"Merging {len(chunk_files)} audio chunks...")  # or use ffprobe inline
+    video_dur = _get_video_duration(video_path)
 
-    print("Overlaying dubbed audio onto video...")
+    for i, clip in enumerate(clips):
+        clip.audio_file_path = os.path.join(chunk_audio_dir, f"chunk{i}.wav")
+
+    _merge_audio_chunks_with_timing(clips, merged_audio_path, total_video_dur=video_dur)
+    # _merge_audio_chunks(chunk_files, merged_audio_path)
+
+    logger.debug("Overlaying dubbed audio onto video...")
     _mux_video_with_audio(video_path, merged_audio_path, output_video_path)
 
-    print(f"Final dubbed video saved at: {output_video_path}")
+    logger.debug(f"Final dubbed video saved at: {output_video_path}")
     return output_video_path
 
 
 if __name__ == "__main__":
     # Example standalone test
-    video = "input/Steve Jobs' 2005 Stanford Commencement Address.mp4"
-    chunks_dir = "output"
+    video = "input/MiniCropSteve Jobs' 2005 Stanford Commencement Address.mp4"
+    chunks_dir = "output/audio_chunks"
     output = "output/final_dubbed_video.mp4"
-
-    overlay_audio_on_video(video_path=video, chunk_audio_dir=chunks_dir, output_video_path=output)
+    with open("output/transcript.json", "r") as fh:
+        data = json.load(fh)
+    clips = _chunk_transcript(data["word_level_timestamps"], default_sample="input/VoiceSample1.wav")
+    overlay_audio_on_video(video_path=video, chunk_audio_dir=chunks_dir, output_video_path=output, clips=clips)
 
     # Run via: uv run python -m src.services.overlay_audio_on_video
