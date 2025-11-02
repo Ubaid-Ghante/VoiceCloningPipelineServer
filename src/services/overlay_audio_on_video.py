@@ -19,9 +19,8 @@ class ClipPart(BaseModel):
     audio_file_path: str = ""
     sample_to_use: str = ""
 
-def _chunk_transcript(word_timestamps, default_sample) -> List[ClipPart]:
+def _chunk_transcript(word_timestamps, default_sample, chunk_size_seconds=30) -> List[ClipPart]:
     chunks = []
-    chunk_size_seconds = 140
 
     current_time = 0
     while current_time < word_timestamps[-1]['end']:
@@ -199,7 +198,7 @@ if __name__ == "__main__":
     output = "output/final_dubbed_video.mp4"
     with open("output/transcript.json", "r") as fh:
         data = json.load(fh)
-    clips = _chunk_transcript(data["word_level_timestamps"], default_sample="input/VoiceSample1.wav")
+    clips = _chunk_transcript(data["word_level_timestamps"], default_sample="input/VoiceSample1.wav", chunk_size_seconds=30)
     overlay_audio_on_video(video_path=video, chunk_audio_dir=chunks_dir, output_video_path=output, clips=clips)
 
     # Run via: uv run python -m src.services.overlay_audio_on_video

@@ -51,7 +51,7 @@ async def main_pipeline(youtube_url="", sample_file="", video_file=""):
             wav_file_path = sample_file[:-4]+".wav"
             subprocess.call(['ffmpeg', '-i', sample_file, wav_file_path])
             sample_file = wav_file_path
-        clips = _chunk_transcript(word_level_timestamps, default_sample=sample_file)
+        clips = _chunk_transcript(word_level_timestamps, default_sample=sample_file, chunk_size_seconds=10)
         os.makedirs(f"output/audio_chunks/{run_id}", exist_ok=True)
         for i, clip in enumerate(clips):
             await generate_audio(text=clip.text, output_filepath=f"output/audio_chunks/{run_id}/chunk{i}.wav", sample_filepath=clip.sample_to_use, video_sec=clip.end - clip.start)

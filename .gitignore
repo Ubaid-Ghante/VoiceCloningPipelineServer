@@ -9,7 +9,7 @@ input/*.wav
 
 output/*.mp4
 output/*.wav
-
+output/audio_chunks/
 # Ignore Whisperx model
 whisperx/
 checkpoints/
