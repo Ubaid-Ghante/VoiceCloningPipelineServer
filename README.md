@@ -6,6 +6,7 @@ Pipeline of stt and tts models for voice cloning and creating a dubbbed video.
 
 - [Overview](#overview)
 - [Usage Instructions](#usage-instructions)
+- [Improvements and Future Work](#improvements-and-future-work)
 
 ## Overview
 
@@ -16,7 +17,7 @@ This repository contains a pipeline that combines speech-to-text (STT) and text-
 3. Generating speech in the desired voice using a text-to-speech model (IndexTTS-2).
 4. Merging the generated speech back into the video to create a dubbed version.
 
-![Flowchart of the Pipeline](./static/Screenshot%202025-11-02%20at%2012.20.27 PM.png)
+<img src="./static/Screenshot 2025-11-02 at 12.20.27 PM.png" alt="Flowchart of the Pipeline" width="50%">
 
 ## Usage Instructions
 
@@ -41,7 +42,8 @@ This repository contains a pipeline that combines speech-to-text (STT) and text-
 > than `pip`.
 
 2. Install ffmpeg on your machine from [here](https://www.ffmpeg.org/download.html). We need this to extract audio from video and other services in the project. \
-For Linux
+   For Linux
+
 ```bash
 sudo add-apt-repository ppa:savoury1/ffmpeg4
 sudo apt-get update
@@ -94,3 +96,12 @@ Note: Make sure to run this command from the root directory of the project and t
 ```bash
 uv run python main.py
 ```
+
+Note: You can tweek CHUNK_LENGTH (in [main](./main.py)) if you get missing words or audio overlap is not proper.
+
+## Improvements and Future Work
+
+- Test with GPU for faster processing.
+- Add support for more TTS and STT models.
+- Detech pauses and do chunking based on that.
+- Multiprocessing for faster processing of chunks.
