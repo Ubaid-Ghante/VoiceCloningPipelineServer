@@ -10,7 +10,7 @@ Pipeline of stt and tts models for voice cloning and creating a dubbbed video.
 
 ## Overview
 
-This repository contains a pipeline that combines speech-to-text (STT) and text-to-speech (TTS) models to facilitate voice cloning and dubbing videos. The pipeline allows users to dube any video in their desired voice. The main components of the pipeline include:
+This repository contains a pipeline that combines speech-to-text (STT) and text-to-speech (TTS) models to facilitate voice cloning and dubbing videos. The pipeline allows users to dub any video in their desired voice. The main components of the pipeline include:
 
 1. Downloading the video from a given URL.
 2. Transcribing the audio from the video using a speech-to-text model (whisperx).
@@ -38,11 +38,11 @@ This repository contains a pipeline that combines speech-to-text (STT) and text-
 
 > [!WARNING]
 > This **only** support the `uv` installation method. Other tools, such as `conda`
-> or `pip` . `uv` is [up to 115x faster](https://github.com/astral-sh/uv/blob/main/BENCHMARKS.md)
+> or `pip` will not work. `uv` is [up to 115x faster](https://github.com/astral-sh/uv/blob/main/BENCHMARKS.md)
 > than `pip`.
 
-2. Install ffmpeg on your machine from [here](https://www.ffmpeg.org/download.html). We need this to extract audio from video and other services in the project. \
-   For Linux
+2. Install ffmpeg on your machine from [here](https://www.ffmpeg.org/download.html). We need this to extract audio from video, convert formats, find video lenght, overlay audio and other services in the project. \
+   For Linux (Ubuntu/Debian) users, you can install it via the following commands:
 
 ```bash
 sudo add-apt-repository ppa:savoury1/ffmpeg4
@@ -59,7 +59,7 @@ sudo apt-get install ffmpeg
 uv sync
 ```
 
-if you face error related to llvm try to install the following packages
+if you face error related to llvm try to install the following packages in linux:
 
 ```bash
 sudo apt update
@@ -105,3 +105,4 @@ Note: You can tweek CHUNK_LENGTH (in [main](./main.py)) if you get missing words
 - Add support for more TTS and STT models.
 - Detech pauses and do chunking based on that.
 - Multiprocessing for faster processing of chunks.
+- Lip-syncing the dubbed audio with the video.
