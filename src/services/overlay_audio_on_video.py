@@ -194,11 +194,11 @@ def overlay_audio_on_video(video_path: str, chunk_audio_dir: str, output_video_p
 if __name__ == "__main__":
     # Example standalone test
     video = "input/MiniCropSteve Jobs' 2005 Stanford Commencement Address.mp4"
-    chunks_dir = "output/audio_chunks"
+    chunks_dir = "output/audio_chunks/2dbc4f20-eebc-4c88-8465-19b7da61eef4"
     output = "output/final_dubbed_video.mp4"
-    with open("output/transcript.json", "r") as fh:
+    with open("output/2dbc4f20-eebc-4c88-8465-19b7da61eef4_transcript.json", "r") as fh:
         data = json.load(fh)
-    clips = _chunk_transcript(data["word_level_timestamps"], default_sample="input/VoiceSample1.wav", chunk_size_seconds=30)
+    clips = _chunk_transcript(data["word_level_timestamps"], default_sample="input/VoiceSample1.wav", chunk_size_seconds=10)
     overlay_audio_on_video(video_path=video, chunk_audio_dir=chunks_dir, output_video_path=output, clips=clips)
 
     # Run via: uv run python -m src.services.overlay_audio_on_video
