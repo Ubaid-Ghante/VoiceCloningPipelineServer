@@ -1,6 +1,22 @@
 # VoiceCloningPipelineServer
 
-Pipeline of stt and tts models for voice cloning.
+Pipeline of stt and tts models for voice cloning and creating a dubbbed video.
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Usage Instructions](#usage-instructions)
+
+## Overview
+
+This repository contains a pipeline that combines speech-to-text (STT) and text-to-speech (TTS) models to facilitate voice cloning and dubbing videos. The pipeline allows users to dube any video in their desired voice. The main components of the pipeline include:
+
+1. Downloading the video from a given URL.
+2. Transcribing the audio from the video using a speech-to-text model (whisperx).
+3. Generating speech in the desired voice using a text-to-speech model (IndexTTS-2).
+4. Merging the generated speech back into the video to create a dubbed version.
+
+![Flowchart of the Pipeline](./static/Screenshot%202025-11-02%20at%2012.20.27 PM.png)
 
 ## Usage Instructions
 
@@ -40,7 +56,9 @@ sudo apt-get install ffmpeg
 ```bash
 uv sync
 ```
+
 if you face error related to llvm try to install the following packages
+
 ```bash
 sudo apt update
 sudo apt install llvm-14 llvm-14-dev llvm-14-tools clang
@@ -55,4 +73,24 @@ sudo apt install llvm-14 llvm-14-dev llvm-14-tools clang
 uv tool install "huggingface-hub[cli,hf_xet]"
 
 hf download IndexTeam/IndexTTS-2 --local-dir=src/models/indextts/checkpoints
+```
+
+### 🚀 Running the Pipeline
+
+There are two ways to run the pipeline:
+
+1. **Using Streamlit Web App**: \
+   Run the Streamlit app to interact with the pipeline via a web interface.
+
+```bash
+uv run streamlit run streamlit_app.py
+```
+
+Note: Make sure to run this command from the root directory of the project and the output video and audio files will be saved in the `output/` directory. Youtube URL downloading can be a problem if you are behind a proxy or firewall.
+
+2. **Using the main.py Script**: \
+   You can also run the pipeline directly using the `main.py` script. Modify the parameters in the script as needed and execute it.
+
+```bash
+uv run python main.py
 ```
